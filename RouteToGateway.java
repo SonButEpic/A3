@@ -23,7 +23,7 @@ public class RouteToGateway {
         //iterate through graph to read matrix
         for(int i = 0; i < numOfRout; i++){
             
-            for(int j = 0; i < numOfRout; j++){
+            for(int j = 0; j < numOfRout; j++){
                 
                 adjMatrix[i][j] = myScanner.nextInt();
             }
@@ -54,6 +54,126 @@ public class RouteToGateway {
                 tempTransposing[j][i] = adjMatrix[i][j];
             }
         }
-    }
 
+        int[] shortestPathBank = new int[numOfRout];
+        int[] nextInLineBank = new int[numOfRout];
+        boolean[] bigBeautifulPath = new boolean[numOfRout];
+
+        Arrays.fill(shortestPathBank, infinity);
+        Arrays.fill(nextInLineBank, -1);
+        shortestPathBank[securityAgent] = 0;
+
+        for(int i = 0; i < numOfRout; i++){
+            int temp = -1;
+
+            for(int j = 0; j < numOfRout; j++){
+                if(!bigBeautifulPath[j] && (temp == -1 || shortestPathBank[j] < shortestPathBank[temp])) temp = j;
+            }
+
+
+            if(shortestPathBank[temp] == infinity){
+                break;
+            }
+
+            bigBeautifulPath[temp] = true;
+
+            if(isGatewayRouters[temp] && temp != securityAgent){
+                continue;
+            }
+
+            for (int temp2 = 0; temp2 < numOfRout; temp2++){
+                if(adjMatrix[temp][temp2] != -1 && shortestPathBank[temp] + adjMatrix[temp][temp2] < shortestPathBank[temp2]){
+                    shortestPathBank[temp2] = shortestPathBank[temp] + adjMatrix[temp][temp2];
+                    nextInLineBank[temp2] = temp;
+                }
+            }
+
+        }
+
+        int[] toSABank = new int[numOfRout];
+        int[] hopToSABank = new int[numOfRout];
+        boolean[] bigBeautifulToSA = new boolean[numOfRout];
+
+        Arrays.fill(toSABank, infinity);
+        Arrays.fill(hopToSABank, -1);
+        toSABank[securityAgent] = 0;
+
+        for(int i = 0; i < numOfRout; i++){
+            
+            int temp = -1;
+            
+            for(int j = 0; j < numOfRout; j++){
+                
+                if(!bigBeautifulToSA[j] && (temp == -1 || toSABank[j] < toSABank[temp])){
+                    temp = j;
+                }
+            }
+            
+            if(temp == -1 || toSABank[temp] == infinity){
+                break;
+            }
+            
+            bigBeautifulToSA[temp] = true;
+
+            if(isGatewayRouters[temp] && temp != securityAgent){
+                continue;
+            }
+
+            for(int temp2 = 0; temp2 < numOfRout; temp2++){
+                
+                if(tempTransposing[temp][temp2] != -1 && toSABank[temp] + tempTransposing[temp][temp2] < toSABank[temp2]){
+                    
+                    toSABank[temp2] = toSABank[temp] + tempTransposing[temp][temp2];
+                    hopToSABank[temp2] = temp;
+                }
+            }
+        }
+        
+        for(int i = 0; i < numOfRout; i++){
+            if(isGatewayRouters[i]){
+                continue;
+            }
+
+            System.out.println("Forwarding Table for " + (i + 1));
+            System.out.println("To\tCost\tNext Hop");
+
+            for(int j = 0; j < gatewayRouters.length; j++){
+                int myDest = gatewayRouters[j];
+
+                int total = infinity;
+
+                int nextH = -1;
+
+                if(toSABank[i] != infinity && shortestPathBank[myDest] != infinity){
+                    total = toSABank[i] + shortestPathBank[myDest];
+
+                    if(i == securityAgent){
+
+                        int current = myDest;
+
+                        while(nextInLineBank[current] != -1 && nextInLineBank[current] != securityAgent){
+
+                            current = nextInLineBank[current];
+                        }
+
+                        nextH = current;
+                    }
+                    else{
+                        nextH = hopToSABank[i];
+                    }
+                }
+
+                if(total >= infinity || nextH == -1){
+                    System.out.println((myDest + 1) + "\t-1\t-1");
+                }
+                else{
+                    System.out.println((myDest + 1) + "\t" + total + "\t" + (nextH + 1));
+                }
+            }
+
+            System.out.println();
+
+        }
+
+    }
 }
